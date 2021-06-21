@@ -1,113 +1,145 @@
 import axios from "axios";
-import { StatusBar } from "expo-status-bar";
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TextInput, Button, Snackbar } from "react-native-paper";
 
 export default function App() {
-  const [name, setName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [age, setAge] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [visible, setVisible] = useState(false);
-  const [hasError, setHasError] = useState(false);
-
-  const changeNameInput = (value) => {
-    setName(value);
+  const initialState = {
+    name: "",
+    lastName: "",
+    age: "",
+    password: "",
+    confirmPassword: "",
+    visible: false,
+    hasError: false,
+    id: "",
+    snackbarMessage: "Suas senhas não conferem, verifique",
   };
 
-  const changeLastNameInput = (value) => {
-    setLastName(value);
-  };
+  const [state, setState] = useState(initialState);
 
-  const changeAge = (value) => {
-    setAge(value);
-  };
-
-  const changePassword = (value) => {
-    setPassword(value);
-  };
-  const changeConfirmPassword = (value) => {
-    setConfirmPassword(value);
+  const handleChange = (value, target) => {
+    setState((state) => ({ ...state, [target]: value }));
   };
 
   const postUser = () => {
-    if (password !== confirmPassword) {
-      setVisible(true);
-      setHasError(true);
+    if (state.password !== state.confirmPassword) {
+      handleChange(true, "visible");
+      handleChange(true, "hasError");
       return;
     }
 
-    setHasError(false);
-    axios.post(
-      "https://crudcrud.com/api/a555d0b58ac742e4a26f2c8be1741a60/usuario",
-      {
-        name: name,
-        lastName: lastName,
-        age: age,
-        password: password,
-      }
-    );
+    handleChange(false, "hasError");
+    axios
+      .post("https://crudcrud.com/api/0bf7c7bb18494bc0ba9d018a2e1f29da/user", {
+        name: state.name,
+        lastName: state.lastName,
+        age: state.age,
+        password: state.password,
+      })
+      .then((response) => {
+        handleChange("Usuário salvo com sucesso!", "snackbarMessage");
+        handleChange(true, "visible");
+        handleChange(response.data._id, "id");
+      });
+  };
+
+  const putUser = () => {
+    axios
+      .put(
+        `https://crudcrud.com/api/0bf7c7bb18494bc0ba9d018a2e1f29da/user/${state.id}`,
+        {
+          name: state.name,
+          lastName: state.lastName,
+          age: state.age,
+          password: state.password,
+        }
+      )
+      .then((response) => {
+        handleChange("Usuário editado com sucesso!", "snackbarMessage");
+        handleChange(true, "visible");
+      });
+  };
+
+  const deleteUser = () => {
+    axios
+      .delete(
+        `https://crudcrud.com/api/0bf7c7bb18494bc0ba9d018a2e1f29da/user/${state.id}`
+      )
+      .then((response) => {
+        setState(initialState);
+        handleChange("Usuário apagado com sucesso!", "snackbarMessage");
+        handleChange(true, "visible");
+      });
   };
 
   const onDismissSnackBar = () => {
-    setVisible(false);
+    handleChange(false, "visible");
   };
 
   return (
     <View style={styles.container}>
+      <Text>Cadastro</Text>
       <TextInput
         style={styles.marginTop}
         label="Primeiro nome"
         placeholder="Digite seu nome"
-        value={name}
-        onChangeText={changeNameInput}
+        value={state.name}
+        onChangeText={(text) => handleChange(text, "name")}
       />
       <TextInput
         label="Sobrenome"
         style={styles.marginTop}
         placeholder="Digite seu sobrenome"
-        value={lastName}
-        onChangeText={changeLastNameInput}
+        value={state.lastName}
+        onChangeText={(text) => handleChange(text, "lastName")}
       />
       <TextInput
         label="Idade"
         style={styles.marginTop}
         placeholder="Digite sua idade"
-        value={age}
-        onChangeText={changeAge}
+        value={state.age}
+        onChangeText={(text) => handleChange(text, "age")}
       />
       <TextInput
         label="Senha"
         style={styles.marginTop}
         placeholder="Digite sua senha"
-        value={password}
-        onChangeText={changePassword}
+        value={state.password}
+        onChangeText={(text) => handleChange(text, "password")}
         secureTextEntry
-        error={hasError}
+        error={state.hasError}
       />
       <TextInput
         label="Confirmação de senha"
         style={styles.marginTop}
         placeholder="Confirme sua senha"
-        value={confirmPassword}
-        onChangeText={changeConfirmPassword}
+        value={state.confirmPassword}
+        onChangeText={(text) => handleChange(text, "confirmPassword")}
         secureTextEntry
-        error={hasError}
+        error={state.hasError}
       />
-      <Button mode="contained" style={styles.marginTop} onPress={postUser}>
-        Enviar Informações
+      <Button
+        mode="contained"
+        style={styles.marginTop}
+        onPress={state.id ? putUser : postUser}
+      >
+        {state.id ? "PUT user" : "POST user"}
       </Button>
+      {state.id && (
+        <Button mode="contained" style={styles.marginTop} onPress={deleteUser}>
+          DELETE user
+        </Button>
+      )}
       <Snackbar
-        visible={visible}
+        visible={state.visible}
         onDismiss={onDismissSnackBar}
         action={{
           label: "Fechar",
           onPress: () => {},
         }}
       >
-        Suas senhas não conferem, verifique
+        {state.snackbarMessage}
       </Snackbar>
     </View>
   );
